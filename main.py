@@ -68,27 +68,59 @@ c6 = pygame.mixer.Sound("Notes\C6.wav")
 channels = []  # Adjust based on your needs
 for i in range(8):
 	channels.append(pygame.mixer.Channel(i))
-		
-# Define the key-to-sound mapping
+
 key_sound_mapping = {
-	pygame.K_5: 	[[b1, c2, cs2],		[b2, c3, cs3],		[b3, c4, cs4],		[b4, c5, cs5]	],
-	pygame.K_6: 	[[cs2, d2, ds2],	[cs3, d3, ds3],		[cs4, d4, ds4],		[cs5, d5, ds5]	],
-	pygame.K_7: 	[[ds2, e2, f2],		[ds3, e3, f3],		[ds4, e4, f4],		[ds5, e5, f5]	],
-	pygame.K_8: 	[[e2, f2, fs2],		[e3, f3, fs3],		[e4, f4, fs4],		[e5, f5, fs5]	],
-	pygame.K_9: 	[[fs2, g2, gs2],	[fs3, g3, gs3],		[fs4, g4, gs4],		[fs5, g5, gs5]	],
-	pygame.K_0: 	[[gs2, a2, as2],	[gs3, a3, as3],		[gs4, a4, as4],		[gs5, a5, as5]	],
-	pygame.K_MINUS: [[as2, b2, c3],		[as3, b3, c4],		[as4, b4, c5],		[as5, b5, c6]	]
-}
-key_octave_mapping = {
-	pygame.K_1: 2,
-	pygame.K_2: 3,
-	pygame.K_3: 4,
-	pygame.K_4: 5
-}
-half_step_mapping = {
-	pygame.K_LCTRL: 0,
-	pygame.K_LSHIFT: 2,
-	pygame.K_CAPSLOCK: 1
+	pygame.K_1: c2,
+	pygame.K_2: cs2,
+	pygame.K_3: d2,
+	pygame.K_4: ds2,
+	pygame.K_5: e2,
+	pygame.K_6: f2,
+	pygame.K_7: fs2,
+	pygame.K_8: g2,
+	pygame.K_9: gs2,
+	pygame.K_0: a2,
+	pygame.K_MINUS: as2,
+	pygame.K_EQUALS: b2,
+
+	pygame.K_TAB: c3,
+	pygame.K_q: cs3,
+	pygame.K_w: d3,
+	pygame.K_e: ds3,
+	pygame.K_r: e3,
+	pygame.K_t: f3,
+	pygame.K_y: fs3,
+	pygame.K_u: g3,
+	pygame.K_i: gs3,
+	pygame.K_o: a3,
+	pygame.K_p: as3,
+	pygame.K_LEFTBRACKET: b3,
+
+	pygame.K_CAPSLOCK: c4,
+	pygame.K_a: cs4,
+	pygame.K_s: d4,
+	pygame.K_d: ds4,
+	pygame.K_f: e4,
+	pygame.K_g: f4,
+	pygame.K_h: fs4,
+	pygame.K_j: g4,
+	pygame.K_k: gs4,
+	pygame.K_l: a4,
+	pygame.K_SEMICOLON: as4,
+	pygame.K_QUOTE: b4,
+
+	pygame.K_LSHIFT: c5,
+	pygame.K_z: cs5,
+	pygame.K_x: d5,
+	pygame.K_c: ds5,
+	pygame.K_v: e5,
+	pygame.K_b: f5,
+	pygame.K_n: fs5,
+	pygame.K_m: g5,
+	pygame.K_COMMA: gs5,
+	pygame.K_PERIOD: a5,
+	pygame.K_SLASH: as5,
+	pygame.K_RSHIFT: b5
 }
 
 # Set up the display
@@ -111,32 +143,18 @@ pygame.display.flip()
 
 # Main loop
 running = True
-octave = 0
-half_step = 1
 while running:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			running = False
-		elif event.type == pygame.KEYDOWN:
-			# Check if the pressed key has a sound mapping
-			if event.key in key_octave_mapping:
-				# Make the new octave the correct index
-				octave = key_octave_mapping[event.key] - 2
+		elif event.type == pygame.KEYDOWN and event.key in key_sound_mapping:
+			sound_to_play = key_sound_mapping[event.key]
 
-			elif event.key in half_step_mapping:
-				# Make the sharp/flat status correct
-				half_step = half_step_mapping[event.key]
-
-			elif event.key in key_sound_mapping:
-				sound_to_play = key_sound_mapping[event.key][octave][half_step]
-				# Adjust the sharp/flat status to default
-				half_step = 1
-
-				# Play the sound on all available channels with no delay
-				for channel in channels:
-					if not channel.get_busy():
-						channel.play(sound_to_play)
-						break  # Play on the first available channel
+			# Play the sound on all available channels with no delay
+			for channel in channels:
+				if not channel.get_busy():
+					channel.play(sound_to_play)
+					break
 
 	pygame.time.delay(10)  # Add a small delay to ensure note is played for correct duration
 
