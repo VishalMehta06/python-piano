@@ -1,4 +1,46 @@
 import pygame
+import time
+import threading
+
+def printKey(font, display, note_text, keybind_text, location, is_pressed):
+	"""
+	font - pygame Font object
+	display - pygame Screen display object
+	note_text - Text for note label
+	keybind_text - Text for keybind
+	location - Location on indexed list starting from 0
+	is_pressed - Boolean if the key is pressed
+	"""
+	# Add the key base
+	if is_pressed:
+		key = pygame.image.load('Images\Pressed_Key.png')
+	else:
+		key = pygame.image.load('Images\Key.png')
+	display.blit(key, (50+(location*25), 0))
+
+	# Add the note label
+	if len(note_text) == 2:
+		note_label = font.render(note_text, True, "RED")
+		display.blit(note_label, (56+(location*25), 10))
+	else:
+		note_label = font.render(note_text, True, "BLACK")
+		display.blit(note_label, (54+(location*25), 10))
+	
+	# Add the key pair
+	keybind_label = font.render(keybind_text, True, "BLUE")
+	if len(keybind_text) == 1:
+		display.blit(keybind_label, (59+(location*25), 80))
+	elif len(keybind_text) == 3:
+		display.blit(keybind_label, (54+(location*25), 80))
+	else:
+		display.blit(keybind_label, (54+(location*25), 80))
+
+	pygame.display.flip()
+
+def pressKey(font, display, note_text, keybind_text, location):
+	printKey(font, display, note_text, keybind_text, location, True)
+	time.sleep(0.5)
+	printKey(font, display, note_text, keybind_text, location, False)
 
 # Initialize pygame
 pygame.init()
@@ -123,23 +165,27 @@ key_sound_mapping = {
 	pygame.K_RSHIFT: b5
 }
 
-# Set up the display
+# Set the GUI Information
+notes = ["C2", "C#2", "D2", "D#2", "E2", "F2", "F#2", "G2", "G#2", "A2", "A#2", "B2",
+		 "C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3",
+		 "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4",
+		 "C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5" ]
+
+keybinds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=",
+			"TAB", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[",
+			"CAP", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "\'",
+			"shft", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "shft"]
+
+# Set up the GUI
 pygame.display.set_caption("Raspiano Music")
-display = pygame.display.set_mode((1300, 500))
+display = pygame.display.set_mode((1300, 150))
 display.fill((255,255,255))
-key = pygame.image.load('Images\Key.png')
-display.blit(key, (100, 0))
-display.blit(key, (200, 0))
-display.blit(key, (300, 0))
-display.blit(key, (400, 0))
-display.blit(key, (500, 0))
-display.blit(key, (600, 0))
-display.blit(key, (700, 0))
-display.blit(key, (800, 0))
-display.blit(key, (900, 0))
-display.blit(key, (1000, 0))
-display.blit(key, (1100, 0))
 pygame.display.flip()
+
+font = pygame.font.SysFont("Calibri", 11)
+
+for i in range(48):
+	printKey(font, display, notes[i], keybinds[i], i, False)
 
 # Main loop
 running = True
@@ -154,6 +200,11 @@ while running:
 			for channel in channels:
 				if not channel.get_busy():
 					channel.play(sound_to_play)
+
+					# Highlight the key on the GUI with a separate thread
+					location = list(key_sound_mapping.keys()).index(event.key)
+					t1 = threading.Thread(target=pressKey, args=(font, display, notes[location], keybinds[location], location))
+					t1.start()
 					break
 
 	pygame.time.delay(10)  # Add a small delay to ensure note is played for correct duration
