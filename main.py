@@ -1,46 +1,43 @@
 import pygame
 import time
 import threading
+import concurrent.futures
+from queue import Queue
 
 def printKey(font, display, note_text, keybind_text, location, is_pressed):
-	"""
-	font - pygame Font object
-	display - pygame Screen display object
-	note_text - Text for note label
-	keybind_text - Text for keybind
-	location - Location on indexed list starting from 0
-	is_pressed - Boolean if the key is pressed
-	"""
-	# Add the key base
-	if is_pressed:
-		key = pygame.image.load('Images\Pressed_Key.png')
-	else:
-		key = pygame.image.load('Images\Key.png')
-	display.blit(key, (50+(location*25), 0))
+	key_image = pygame.image.load("Images\Pressed_Key.png") if is_pressed else pygame.image.load("Images\Key.png")
+	display.blit(key_image, (50 + (location * 25), 0))
 
-	# Add the note label
 	if len(note_text) == 2:
 		note_label = font.render(note_text, True, "RED")
-		display.blit(note_label, (56+(location*25), 10))
+		display.blit(note_label, (56 + (location * 25), 10))
 	else:
 		note_label = font.render(note_text, True, "BLACK")
-		display.blit(note_label, (54+(location*25), 10))
-	
-	# Add the key pair
+		display.blit(note_label, (54 + (location * 25), 10))
+
 	keybind_label = font.render(keybind_text, True, "BLUE")
 	if len(keybind_text) == 1:
-		display.blit(keybind_label, (59+(location*25), 80))
+		display.blit(keybind_label, (59 + (location * 25), 80))
 	elif len(keybind_text) == 3:
-		display.blit(keybind_label, (54+(location*25), 80))
+		display.blit(keybind_label, (54 + (location * 25), 80))
 	else:
-		display.blit(keybind_label, (54+(location*25), 80))
+		display.blit(keybind_label, (54 + (location * 25), 80))
 
 	pygame.display.flip()
 
-def pressKey(font, display, note_text, keybind_text, location):
+def pressKey(queue, font, display, note_text, keybind_text, location):
 	printKey(font, display, note_text, keybind_text, location, True)
-	time.sleep(0.5)
-	printKey(font, display, note_text, keybind_text, location, False)
+
+	# Queue the note for playback
+	queue.put((note_text, keybind_text, location))
+	time.sleep(0.1)  # Adjust this sleep time if needed
+
+def process_queue(queue, font, display):
+	while True:
+		if not queue.empty():
+			note_text, keybind_text, location = queue.get()
+			time.sleep(0.2)  # Adjust this sleep time if needed
+			printKey(font, display, note_text, keybind_text, location, False)
 
 # Initialize pygame
 pygame.init()
@@ -105,12 +102,11 @@ b5 = pygame.mixer.Sound("Notes\B5.wav")
 
 c6 = pygame.mixer.Sound("Notes\C6.wav")
 
-
 # Set up mixer channels
-channels = []  # Adjust based on your needs
-for i in range(8):
-	channels.append(pygame.mixer.Channel(i))
+num_channels = 32  # Adjust based on your needs
+channels = [pygame.mixer.Channel(i) for i in range(min(num_channels, pygame.mixer.get_num_channels()))]
 
+# Key sound mapping and GUI information
 key_sound_mapping = {
 	pygame.K_1: c2,
 	pygame.K_2: cs2,
@@ -179,35 +175,44 @@ keybinds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=",
 # Set up the GUI
 pygame.display.set_caption("Raspiano Music")
 display = pygame.display.set_mode((1300, 150))
-display.fill((255,255,255))
+display.fill((255, 255, 255))
 pygame.display.flip()
 
 font = pygame.font.SysFont("Calibri", 11)
 
-for i in range(48):
-	printKey(font, display, notes[i], keybinds[i], i, False)
+# Use ThreadPoolExecutor for thread pooling
+with concurrent.futures.ThreadPoolExecutor() as executor:
+	for i in range(len(notes)):
+		printKey(font, display, notes[i], keybinds[i], i, False)
 
-# Main loop
-running = True
-while running:
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			running = False
-		elif event.type == pygame.KEYDOWN and event.key in key_sound_mapping:
-			sound_to_play = key_sound_mapping[event.key]
+	# Start the queue processing thread
+	note_queue = Queue()
+	queue_thread = threading.Thread(target=process_queue, args=(note_queue, font, display))
+	queue_thread.daemon = True
+	queue_thread.start()
 
-			# Play the sound on all available channels with no delay
-			for channel in channels:
-				if not channel.get_busy():
-					channel.play(sound_to_play)
+	# Main loop
+	clock = pygame.time.Clock()
+	running = True
+	while running:
+		clock.tick(60)  # Set the desired frame rate (e.g., 60 frames per second)
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				running = False
+			elif event.type == pygame.KEYDOWN and event.key in key_sound_mapping:
+				sound_to_play = key_sound_mapping[event.key]
 
-					# Highlight the key on the GUI with a separate thread
-					location = list(key_sound_mapping.keys()).index(event.key)
-					t1 = threading.Thread(target=pressKey, args=(font, display, notes[location], keybinds[location], location))
-					t1.start()
-					break
+				# Play the sound on all available channels with no delay
+				for channel in channels:
+					if not channel.get_busy():
+						channel.play(sound_to_play)
 
-	pygame.time.delay(10)  # Add a small delay to ensure note is played for correct duration
+						# Highlight the key on the GUI with a separate thread
+						location = list(key_sound_mapping.keys()).index(event.key)
+						executor.submit(pressKey, note_queue, font, display, notes[location], keybinds[location], location)
+						break
+
+		pygame.time.delay(1)  # Add a small delay to ensure note is played for the correct duration
 
 # Clean up pygame
 pygame.quit()
