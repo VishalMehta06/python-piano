@@ -46,8 +46,6 @@ pygame.init()
 pygame.mixer.init()
 
 # Load sounds
-b1 = pygame.mixer.Sound("Notes\B1.wav")
-
 c2 = pygame.mixer.Sound("Notes\C2.wav")
 cs2 = pygame.mixer.Sound("Notes\C#2.wav")
 d2 = pygame.mixer.Sound("Notes\D2.wav")
@@ -99,8 +97,6 @@ gs5 = pygame.mixer.Sound("Notes\G#5.wav")
 a5 = pygame.mixer.Sound("Notes\A5.wav")
 as5 = pygame.mixer.Sound("Notes\A#5.wav")
 b5 = pygame.mixer.Sound("Notes\B5.wav")
-
-c6 = pygame.mixer.Sound("Notes\C6.wav")
 
 # Set up mixer channels
 num_channels = 32  # Adjust based on your needs
