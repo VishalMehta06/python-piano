@@ -1,5 +1,9 @@
 # Piano App
 
+## Credit
+* Programmed by [Vishal Mehta (me)](https://github.com/VishalMehta06/)
+* Original Contribution From: [Brayden D.](https://github.com/Brayden039)
+
 ## Installation
 * Clone the repository via
 ```
